@@ -182,6 +182,14 @@ static uint16_t temp_table_lookup(uint16_t temp, uint8_t sensor) {
     sersendf_P(PSTR("pin:%d Raw ADC:%d table entry: %d"),
                temp_sensors[sensor].temp_pin, temp, hi);
 
+  #define RAW_TEMP_VALUE_0 pgm_read_word(&(temptable[table_num][0][0]))
+  #define RAW_TEMP_VALUE_N pgm_read_word(&(temptable[table_num][NUMTEMPS][0]))
+
+  #define RAW_TEMP_MIN (RAW_TEMP_VALUE_0 > RAW_TEMP_VALUE_N ? RAW_TEMP_VALUE_N : RAW_TEMP_VALUE_0)
+  #define RAW_TEMP_MAX (RAW_TEMP_VALUE_0 > RAW_TEMP_VALUE_N ? RAW_TEMP_VALUE_0 : RAW_TEMP_VALUE_N)
+
+  #define TEMP_ERROR_VALUE 0xFFFF
+
   if (sizeof(temptable[0][0]) == 2 * sizeof(uint16_t)) {
     /**
       This code handles temptables with value pairs and is deprecated.
@@ -191,28 +199,21 @@ static uint16_t temp_table_lookup(uint16_t temp, uint8_t sensor) {
       and also faster. Configtool was already changed to create tables
       with triples, only.
     */
-    // Wikipedia's example linear interpolation formula.
-    // y = ((x - x₀)y₁ + (x₁-x)y₀) / (x₁ - x₀)
-    // y = temp
-    // x = ADC reading
-    // x₀= temptable[lo][0]
-    // x₁= temptable[hi][0]
-    // y₀= temptable[lo][1]
-    // y₁= temptable[hi][1]
-    temp = (
-      // ((x - x₀)y₁
-      ((uint32_t)temp - pgm_read_word(&(temptable[table_num][lo][0]))) *
-                        pgm_read_word(&(temptable[table_num][hi][1]))
-      //             +
-      +
-      //               (x₁-x)y₀)
-      (pgm_read_word(&(temptable[table_num][hi][0])) - (uint32_t)temp) *
-        pgm_read_word(&(temptable[table_num][lo][1])))
-      //                        /
-      /
-      //                          (x₁ - x₀)
-      (pgm_read_word(&(temptable[table_num][hi][0])) -
-       pgm_read_word(&(temptable[table_num][lo][0])));
+    #define X0 pgm_read_word(&(temptable[table_num][lo][0]))
+    #define Y0 pgm_read_word(&(temptable[table_num][lo][1]))
+    #define X1 pgm_read_word(&(temptable[table_num][hi][0]))
+    #define Y1 pgm_read_word(&(temptable[table_num][hi][1]))
+
+    if (temp < RAW_TEMP_MIN)
+      temp = TEMP_ERROR_VALUE;
+    else if (temp > RAW_TEMP_MAX)
+      temp = TEMP_ERROR_VALUE;
+    else
+      // Wikipedia's example linear interpolation formula.
+      // y = ((x - x₀)y₁ + (x₁-x)y₀) / (x₁ - x₀)
+      // y = temp
+      // x = ADC reading
+      temp = (((uint32_t)temp - X0) * Y1 + (X1 - (uint32_t)temp) * Y0) / (X1 - X0);
   } else
   if (sizeof(temptable[0][0]) == 3 * sizeof(uint16_t)) {
     // Linear interpolation using pre-computed slope.
@@ -221,7 +222,12 @@ static uint16_t temp_table_lookup(uint16_t temp, uint8_t sensor) {
     #define Y1 pgm_read_word(&(temptable[table_num][hi][1]))
     #define D1 pgm_read_word(&(temptable[table_num][hi][2]))
 
-    temp = Y1 - ((((int32_t)temp - X1) * D1 + (1 << 7)) >> 8);
+    if (temp < RAW_TEMP_MIN)
+      temp = TEMP_ERROR_VALUE;
+    else if (temp > RAW_TEMP_MAX)
+      temp = TEMP_ERROR_VALUE;
+    else
+      temp = Y1 - ((((int32_t)temp - X1) * D1 + (1 << 7)) >> 8);
   }
 
   if (DEBUG_PID && (debug_flags & DEBUG_PID))
