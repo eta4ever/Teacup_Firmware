@@ -815,21 +815,21 @@ ISR(USB_COM_vect)
 					UECONX = (1<<STALLRQ)|(1<<EPEN);  //stall
 					return;
 				}
-				desc_val = pgm_read_word(list);
+				desc_val = *list;
 				if (desc_val != wValue) {
 					list += sizeof(struct descriptor_list_struct);
 					continue;
 				}
 				list += 2;
-				desc_val = pgm_read_word(list);
+				desc_val = *list;
 				if (desc_val != wIndex) {
 					list += sizeof(struct descriptor_list_struct)-2;
 					continue;
 				}
 				list += 2;
-				desc_addr = (const uint8_t *)pgm_read_word(list);
+				desc_addr = (const uint8_t *)*list;
 				list += 2;
-				desc_length = pgm_read_byte(list);
+				desc_length = *list;
 				break;
 			}
 			len = (wLength < 256) ? wLength : 255;
@@ -843,7 +843,7 @@ ISR(USB_COM_vect)
 				// send IN packet
 				n = len < ENDPOINT0_SIZE ? len : ENDPOINT0_SIZE;
 				for (i = n; i; i--) {
-					UEDATX = pgm_read_byte(desc_addr++);
+					UEDATX = *desc_addr++;
 				}
 				len -= n;
 				usb_send_in();
@@ -864,11 +864,11 @@ ISR(USB_COM_vect)
 			cfg = endpoint_config_table;
 			for (i=1; i<5; i++) {
 				UENUM = i;
-				en = pgm_read_byte(cfg++);
+				en = *cfg++;
 				UECONX = en;
 				if (en) {
-					UECFG0X = pgm_read_byte(cfg++);
-					UECFG1X = pgm_read_byte(cfg++);
+					UECFG0X = *cfg++;
+					UECFG1X = *cfg++;
 				}
 			}
         		UERST = 0x1E;

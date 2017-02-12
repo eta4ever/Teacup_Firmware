@@ -89,7 +89,6 @@ int8_t usb_serial_set_control(uint8_t signals); // set DSR, DCD, RI, etc
 // Everything below this point is only intended for usb_serial.c
 #ifdef USB_SERIAL_PRIVATE_INCLUDE
 #include <avr/io.h>
-#include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 
 #define EP_TYPE_CONTROL			0x00
