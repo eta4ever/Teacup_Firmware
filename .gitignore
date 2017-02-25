@@ -1,5 +1,4 @@
 *.pyc
-*.hex
 *.elf
 build
 *~
@@ -7,9 +6,6 @@ build
 private/
 temporal.png
 temporal_data
-config.h
-thermistortable.h
-Makefile
 sim
 doc
 datalog.out
