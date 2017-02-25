@@ -105,10 +105,6 @@ $(BUILDDIR)/%.bin: $(BUILDDIR)/%.elf
 	@echo "  OBJCOPY   $@"
 	@$(OBJCOPY) -j .text -j .data -O binary $< $@
 
-$(BUILDDIR)/%.sym: $(BUILDDIR)/%.elf
-	@echo "  SYM       $@"
-	@$(OBJDUMP) -t $< | perl -ne 'BEGIN { printf "  ADDR  NAME                  SIZE\n"; } /([0-9a-f]+)\s+(\w+)\s+O\s+\.(bss|data)\s+([0-9a-f]+)\s+(\w+)/ && printf "0x%04x  %-20s +%d\n", eval("0x$$1") & 0xFFFF, $$5, eval("0x$$4")' | sort -k1 > $@
-
 
 # Helpful tools.
 

@@ -209,6 +209,7 @@ uint8_t serial_popchar(void) {
 uint8_t serial_txchars(void) {
   return uartx_rxchars(UART_SERIAL);
 }
+
 void serial_writechar(uint8_t data) {
   uartx_writechar(UART_SERIAL, data);
 }
